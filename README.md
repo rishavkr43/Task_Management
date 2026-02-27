@@ -109,14 +109,14 @@ cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Create `.env.example`:
 ```env
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/?appName=Cluster0
-JWT_SECRET=your-super-secret-jwt-key-32-characters-long
-PORT=5000
-NODE_ENV=development
-ENCRYPTION_KEY=your-encryption-key-32-chars-long-abc
-FRONTEND_URL=http://localhost:3000
+MONGODB_URI=
+JWT_SECRET=
+PORT=
+NODE_ENV=
+ENCRYPTION_KEY=
+FRONTEND_URL=
 ```
 
 ```bash
