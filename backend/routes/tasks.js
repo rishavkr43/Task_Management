@@ -3,6 +3,10 @@ const router = express.Router();
 const Task = require('../models/Task');
 const auth = require('../middleware/auth');
 const { encrypt, decrypt } = require('../utils/encryption');
+const cache = require('../utils/cache');
+
+// Cache TTL in seconds (60 s for task lists)
+const CACHE_TTL = 60;
 
 // @route   POST /api/tasks
 // @desc    Create new task
@@ -36,6 +40,9 @@ router.post('/', auth, async (req, res) => {
     const taskResponse = task.toObject();
     taskResponse.description = decrypt(taskResponse.description);
 
+    // Invalidate this user's cached task lists
+    cache.delByPrefix(`tasks:${req.userId}:`);
+
     res.status(201).json({
       success: true,
       message: 'Task created successfully',
@@ -51,12 +58,19 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/tasks
+// @route   GET /api/v1/tasks
 // @desc    Get all tasks with pagination, search, and filter
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
     const { page = 1, limit = 10, status, search } = req.query;
+
+    // --- Cache check ---
+    const cacheKey = `tasks:${req.userId}:p${page}:l${limit}:s${status || ''}:q${search || ''}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({ ...cached, fromCache: true });
+    }
 
     // Build query
     const query = { userId: req.userId };
@@ -90,7 +104,7 @@ router.get('/', auth, async (req, res) => {
       return taskObj;
     });
 
-    res.status(200).json({
+    const responsePayload = {
       success: true,
       tasks: decryptedTasks,
       pagination: {
@@ -99,7 +113,12 @@ router.get('/', auth, async (req, res) => {
         totalTasks: total,
         limit: parseInt(limit)
       }
-    });
+    };
+
+    // Store in cache
+    cache.set(cacheKey, responsePayload, CACHE_TTL);
+
+    res.status(200).json(responsePayload);
 
   } catch (error) {
     console.error('Get tasks error:', error);
@@ -178,6 +197,9 @@ router.put('/:id', auth, async (req, res) => {
     const taskResponse = task.toObject();
     taskResponse.description = decrypt(taskResponse.description);
 
+    // Invalidate this user's cached task lists
+    cache.delByPrefix(`tasks:${req.userId}:`);
+
     res.status(200).json({
       success: true,
       message: 'Task updated successfully',
@@ -209,6 +231,9 @@ router.delete('/:id', auth, async (req, res) => {
         message: 'Task not found or unauthorized'
       });
     }
+
+    // Invalidate this user's cached task lists
+    cache.delByPrefix(`tasks:${req.userId}:`);
 
     res.status(200).json({
       success: true,

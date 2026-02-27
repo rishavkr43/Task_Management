@@ -374,6 +374,40 @@ All errors follow a consistent structure:
 ```
 
 ---
+## 🚀 Scalability Notes
+
+### Already Implemented
+| Technique | Where |
+|-----------|-------|
+| **In-memory TTL cache** | `GET /api/v1/tasks` cached per-user for 60 s; invalidated on create / update / delete |
+| **MongoDB compound indexes** | `{ userId, status }` + text index on `title` |
+| **Pagination on all list endpoints** | Avoids full-collection scans |
+| **Serverless deployment** | Vercel auto-scales horizontally under traffic spikes |
+
+### Path to Production Scale
+
+Keep everything in your README up to line 375 (the last ---). Then replace everything after line 375 with this:
+<br>
+
+Load Balancer (e.g. AWS ALB / Nginx)
+|
+API Node 1 API Node 2 API Node 3 <- horizontal replicas
+| | |
++---------------+-----------+
+|
+Redis (shared cache) <- swap utils/cache.js for ioredis
+|
+MongoDB Atlas <- read replicas + connection pooling
+(primary + 2 replicas)
+**Key scaling levers:**
+1. **Redis** — `utils/cache.js` has a drop-in interface; swap `get/set/del` for `ioredis` calls and the cache works across all nodes.
+2. **Load balancing** — JWTs are stateless (HTTP-only cookie); no sticky sessions needed.
+3. **Microservices** — Auth and Tasks can be split into separate deployments when load justifies it.
+4. **Message queue (BullMQ / SQS)** — offload heavy ops (email, bulk exports) to background workers.
+5. **Rate limiting** — add `express-rate-limit` middleware on auth routes to prevent brute-force.
+6. **Docker + Kubernetes** — containerise each service; each gets its own `Dockerfile` and K8s `Deployment`.
+
+---
 
 ## ✅ Assessment Requirements Checklist
 
@@ -383,12 +417,17 @@ All errors follow a consistent structure:
 | JWT-based authentication | ✅ |
 | HTTP-only cookie token storage | ✅ |
 | Password hashing (bcrypt) | ✅ |
+| Role-based access (user vs admin) | ✅ |
+| Admin routes (list users/tasks, change roles, delete) | ✅ |
 | CRUD APIs for tasks | ✅ |
+| API versioning (`/api/v1/`) | ✅ |
+| Swagger UI (`/api/docs`) | ✅ |
 | User-scoped task access | ✅ |
 | Input validation & error handling | ✅ |
 | Secure cookie flags (HttpOnly, Secure) | ✅ |
 | AES payload encryption (task description) | ✅ |
 | NoSQL injection prevention | ✅ |
+| In-memory caching (task list, per-user TTL) | ✅ |
 | Pagination | ✅ |
 | Filter by status | ✅ |
 | Search by title | ✅ |
@@ -396,4 +435,5 @@ All errors follow a consistent structure:
 | Deployed & publicly accessible | ✅ |
 | Environment variables (no hardcoding) | ✅ |
 | README with setup & architecture | ✅ |
-| API request/response documentation | ✅ |
+| API documentation (Swagger UI) | ✅ |
+| Scalability notes | ✅ |

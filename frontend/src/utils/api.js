@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'https://task-management-alpha-peach-74.vercel.app/api',
   withCredentials: true, // Important for cookies
   headers: {
     'Content-Type': 'application/json'

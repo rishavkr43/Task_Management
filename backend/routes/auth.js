@@ -115,7 +115,8 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       user: {
         id: user._id,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
 
@@ -169,7 +170,8 @@ router.get('/me', auth, async (req, res) => {
       success: true,
       user: {
         id: user._id,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
 

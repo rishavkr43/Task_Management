@@ -2,11 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./docs/swagger');
 const connectDB = require('./config/db');
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
+const adminRoutes = require('./routes/admin');
 
 // Initialize express app
 const app = express();
@@ -37,7 +40,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Routes
+// Swagger UI — available at /api/docs
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Versioned routes (v1)
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/tasks', taskRoutes);
+app.use('/api/v1/admin', adminRoutes);
+
+// Backwards-compatible aliases (unversioned)
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
